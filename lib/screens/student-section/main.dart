@@ -331,7 +331,7 @@ class _StudentHomeScreenState extends State<HomeStudent> {
                 ? ShimmerHelper.buildHomePageShimmer(context)
                 : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     // Search Bar
                     Container(
@@ -371,7 +371,7 @@ class _StudentHomeScreenState extends State<HomeStudent> {
                             vertical: 8,
                           ),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -479,10 +479,9 @@ class _StudentHomeScreenState extends State<HomeStudent> {
   }
 
   Widget _buildClassListItem(ClassInfo classInfo) {
-    print(classInfo);
     final isCurrent = currentClass == classInfo;
     final isNext = nextClass == classInfo;
-    if (isCurrent || isNext) return const SizedBox.shrink();
+    // if (isCurrent || isNext) return const SizedBox.shrink();
 
     final classEnd = DateTime(
       _currentTime.year,
@@ -501,7 +500,9 @@ class _StudentHomeScreenState extends State<HomeStudent> {
         decoration: BoxDecoration(
           border: Border.all(
             color:
-                selectedClass?.id == classInfo.id
+                isCurrent || isNext
+                    ? Colors.green
+                    : selectedClass?.id == classInfo.id
                     ? const Color.fromARGB(255, 138, 138, 138)
                     : isPast
                     ? Colors.grey
@@ -511,6 +512,8 @@ class _StudentHomeScreenState extends State<HomeStudent> {
           color:
               selectedClass?.id == classInfo.id
                   ? ColorStyle.BlueStatic
+                  : isCurrent || isNext
+                  ? Colors.green.withOpacity(0.2)
                   : isPast
                   ? Colors.grey.shade200
                   : Colors.white,
@@ -524,7 +527,7 @@ class _StudentHomeScreenState extends State<HomeStudent> {
               fontWeight: FontWeight.w300,
               fontFamily: 'Roboto',
               color:
-                  selectedClass?.id == classInfo.id
+                  selectedClass?.id == classInfo.id || isCurrent || isNext
                       ? Colors.white
                       : Colors.black,
             ),
@@ -535,97 +538,110 @@ class _StudentHomeScreenState extends State<HomeStudent> {
   }
 
   Widget _buildClassDetailsSection() {
-    return Padding(
-      padding: const EdgeInsets.all(4.0),
-      child: Container(
-        width: MediaQuery.of(context).size.width,
-        padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child:
-            filteredClasses.isEmpty || selectedClass == null
-                ? Expanded(
-                  child: NoClassesFound(
-                    onRefresh: _fetchClassData,
-                    message: 'No Class schedule for today ',
-                    parameter: 'Selected Classes',
-                  ),
-                )
-                : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Class Details",
-                      style: TextStyle(
-                        fontSize: 24,
-                        color: Colors.black,
-                        fontFamily: 'Roboto',
-                        fontWeight: FontWeight.w500,
-                      ),
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Container(
+          width: MediaQuery.of(context).size.width,
+          padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.black),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child:
+              filteredClasses.isEmpty || selectedClass == null
+                  ? Expanded(
+                    child: NoClassesFound(
+                      onRefresh: _fetchClassData,
+                      message: 'No Class schedule for today ',
+                      parameter: 'Selected Classes',
                     ),
-                    const SizedBox(height: 8.0),
-                    _buildDetailsRow(
-                      'Punch In:',
-                      TimeHelper.formatTimeOfDayForDisplay(
-                        selectedClass!.startTime,
+                  )
+                  : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Class Details",
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: Colors.black,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    _buildDetailsRow(
-                      'Punch Out :',
-                      TimeHelper.formatTimeOfDayForDisplay(
-                        selectedClass!.endTime,
+                      const SizedBox(height: 8.0),
+                      _buildDetailsRow(
+                        'Punch In:',
+                        TimeHelper.formatTimeOfDayForDisplay(
+                          selectedClass!.startTime,
+                        ),
                       ),
-                    ),
+                      _buildDetailsRow(
+                        'Punch Out :',
+                        TimeHelper.formatTimeOfDayForDisplay(
+                          selectedClass!.endTime,
+                        ),
+                      ),
 
-                    _buildDetailsRow('Teacher:', selectedClass!.instructorName),
-                    _buildDetailsRow('Course Code:', selectedClass!.courseCode),
-                    _buildDetailsRow(
-                      'Class:',
-                      ' ${selectedClass!.room} | Sec ${selectedClass!.section.toUpperCase()} | Rasq ${selectedClass!.raspberry_Pi}',
-                    ),
-                    _buildDetailsRow('Status:', selectedClass!.status),
-                    _buildDetailsRow('Department:', selectedClass!.department),
+                      _buildDetailsRow(
+                        'Teacher:',
+                        selectedClass!.instructorName,
+                      ),
+                      _buildDetailsRow(
+                        'Course Code:',
+                        selectedClass!.courseCode,
+                      ),
+                      _buildDetailsRow(
+                        'Class:',
+                        ' ${selectedClass!.room} | Sec ${selectedClass!.section.toUpperCase()} | Rasq ${selectedClass!.raspberry_Pi}',
+                      ),
+                      _buildDetailsRow('Status:', selectedClass!.status),
+                      _buildDetailsRow(
+                        'Department:',
+                        selectedClass!.department,
+                      ),
 
-                    const SizedBox(height: 5.0),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed:
-                            () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => SingleSubjectGraphStudent(
-                                      semesterId: selectedClass!.semesterId,
-                                      courseId: selectedClass!.courseId,
-                                    ),
+                      const SizedBox(height: 5.0),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (context) => SingleSubjectGraphStudent(
+                                        semesterId: selectedClass!.semesterId,
+                                        courseId: selectedClass!.courseId,
+                                        course: selectedClass!.course,
+                                        code: selectedClass!.courseCode,
+                                      ),
+                                ),
+                              ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ColorStyle.BlueStatic,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
+                          ),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 6.0),
+                            child: Text(
+                              'View More',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w300,
                               ),
                             ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ColorStyle.BlueStatic,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30.0),
-                          ),
-                        ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 6.0),
-                          child: Text(
-                            'View More',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w300,
-                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+        ),
       ),
     );
   }

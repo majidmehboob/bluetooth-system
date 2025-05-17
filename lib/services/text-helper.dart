@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 
 class TextFormatHelper {
   static Color getStatusClass(String status) {
+    print(status);
     switch (status) {
       case 'completed':
         return Colors.green;
-      case 'upcomming':
-        return Colors.grey;
-      case 'pending':
+      case 'upcoming':
         return Colors.orange;
+      case 'ongoing':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
@@ -48,7 +49,8 @@ class TextFormatHelper {
     String courseName, {
     TextStyle? style,
     TextAlign textAlign = TextAlign.start,
-    double letterSpacing = 1.5, // Default letter spacing for second word
+    double letterSpacing = 2,
+    // Default letter spacing for second word
   }) {
     final words = courseName.split(' ');
     final hasSpace = words.length > 1;
@@ -64,7 +66,10 @@ class TextFormatHelper {
               // Apply letter spacing only to the second word (index 1)
               final wordStyle =
                   index == 1
-                      ? style?.copyWith(letterSpacing: letterSpacing) ??
+                      ? style?.copyWith(
+                            letterSpacing: letterSpacing,
+                            fontSize: 20,
+                          ) ??
                           TextStyle(letterSpacing: letterSpacing)
                       : style;
 

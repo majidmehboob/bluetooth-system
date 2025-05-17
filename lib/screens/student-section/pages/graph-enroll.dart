@@ -29,8 +29,6 @@ class _AttendanceReportState extends State<EnrollSubjectGraphStudent> {
   Future<void> _fetchAttendanceData() async {
     try {
       final response = await ClassApiService.fetchSemesterAttendanceReport();
-      print(response);
-      print(":::::::::::::::::::::::::::::::::::::::");
       setState(() {
         attendanceReport = response['attendance_report'];
         semesterInfo = response['semester_info'];
@@ -334,6 +332,10 @@ class _AttendanceReportState extends State<EnrollSubjectGraphStudent> {
                                                         selectedSubject['semester_id'],
                                                     courseId:
                                                         selectedSubject['course_id'],
+                                                    course:
+                                                        selectedSubject['course_name'],
+                                                    code:
+                                                        selectedSubject['course_code'],
                                                   ),
                                             ),
                                           );

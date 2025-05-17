@@ -16,7 +16,7 @@ Widget selectedClassDetails({
       constraints: BoxConstraints(maxWidth: 250),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           TextFormatHelper.formatCourseNameWithBreaks(
             classInfo.course,
@@ -59,6 +59,7 @@ Widget selectedClassDetails({
           const SizedBox(height: 10),
           if (status == "completed")
             Container(
+              width: 130,
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               color: const Color.fromARGB(255, 187, 230, 189),
               child: Row(
@@ -83,30 +84,34 @@ Widget selectedClassDetails({
               ),
             )
           else
-            ElevatedButton(
-              onPressed: onJoinPressed,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 4.0,
-                  horizontal: 20.0,
+            classInfo.attendanceSessionId == null && isStudent == true
+                ? Text(
+                  "Teacher did not join the class",
+                  style: TextStyle(color: Colors.grey[700]),
+                )
+                : ElevatedButton(
+                  onPressed: onJoinPressed,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4.0,
+                      horizontal: 20.0,
+                    ),
+                    backgroundColor: Color(0xFFEBEDF0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+
+                  child: Text(
+                    "Join Now",
+                    style: TextStyle(
+                      fontFamily: 'Roboto',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
-                backgroundColor: Color(0xFFEBEDF0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              child: Text(
-                classInfo.attendanceSessionId == null && isStudent == true
-                    ? 'Awaiting'
-                    : "Join Now",
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black,
-                ),
-              ),
-            ),
         ],
       ),
     ),

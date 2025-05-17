@@ -23,7 +23,7 @@ class NoClassesFound extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
-              // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Image.asset('assets/images/not_found.png', width: 140),
                 const SizedBox(height: 4),
@@ -32,12 +32,13 @@ class NoClassesFound extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 230),
+                      constraints: const BoxConstraints(maxWidth: 150),
                       child: Text(
                         message,
                         style: TextStyle(color: Colors.black, fontSize: 18),
                         textAlign: TextAlign.start,
                         softWrap: true,
+                        maxLines: 2,
                       ),
                     ),
                     SizedBox(height: 4),

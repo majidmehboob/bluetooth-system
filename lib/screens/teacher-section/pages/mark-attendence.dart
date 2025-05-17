@@ -896,136 +896,139 @@ class _BluetoothScreenState extends State<MarkAttendenceTeacher> {
           },
         ),
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 15),
-          // Header with Time and Date
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              children: [
-                Text(
-                  _formattedTime,
-                  style: const TextStyle(
-                    fontSize: 50,
-                    fontWeight: FontWeight.w300,
-                    fontFamily: 'Roboto',
-                    color: Color(0xFF293646),
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            const SizedBox(height: 15),
+            // Header with Time and Date
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                children: [
+                  Text(
+                    _formattedTime,
+                    style: const TextStyle(
+                      fontSize: 50,
+                      fontWeight: FontWeight.w300,
+                      fontFamily: 'Roboto',
+                      color: Color(0xFF293646),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$_formattedDate - $_formattedDay',
-                  style: const TextStyle(
-                    color: Color(0xFF6A7D94),
-                    fontSize: 14,
-                    fontFamily: 'Roboto',
-                    fontWeight: FontWeight.w400,
+                  const SizedBox(height: 4),
+                  Text(
+                    '$_formattedDate - $_formattedDay',
+                    style: const TextStyle(
+                      color: Color(0xFF6A7D94),
+                      fontSize: 14,
+                      fontFamily: 'Roboto',
+                      fontWeight: FontWeight.w400,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 30),
-          // Session Button
-          GestureDetector(
-            onLongPress: _isSessionActive ? _endAttendanceSession : null,
-            onTap:
-                !_isSessionActive && !_isCreatingSession
-                    ? _createAttendanceSession
-                    : null,
-            child: Center(
-              child: Container(
-                width: 180,
-                height: 180,
-                padding: const EdgeInsets.all(18.0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(110),
-                  color:
-                      _isCreatingSession
-                          ? Colors.grey
-                          : _isSessionActive
-                          ? Colors.blue
-                          : _isSessionEnded
-                          ? Colors.grey
-                          : const Color(0xFF9CCAF9),
-                ),
+            const SizedBox(height: 30),
+            // Session Button
+            GestureDetector(
+              onLongPress: _isSessionActive ? _endAttendanceSession : null,
+              onTap:
+                  !_isSessionActive && !_isCreatingSession
+                      ? _createAttendanceSession
+                      : null,
+              child: Center(
                 child: Container(
-                  width: 90,
-                  height: 90,
-                  padding: const EdgeInsets.all(6.0),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFCFE2F8),
-                    borderRadius: BorderRadius.all(Radius.circular(100)),
+                  width: 180,
+                  height: 180,
+                  padding: const EdgeInsets.all(18.0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(110),
+                    color:
+                        _isCreatingSession
+                            ? Colors.grey
+                            : _isSessionActive
+                            ? Colors.blue
+                            : _isSessionEnded
+                            ? Colors.grey
+                            : const Color(0xFF9CCAF9),
                   ),
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: 90,
+                    height: 90,
+                    padding: const EdgeInsets.all(6.0),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFB7D4F6),
+                      color: Color(0xFFCFE2F8),
                       borderRadius: BorderRadius.all(Radius.circular(100)),
                     ),
-                    child: Icon(
-                      Icons.calendar_today,
-                      size: 70,
-                      color:
-                          _isSessionActive
-                              ? Colors.white
-                              : _isSessionEnded
-                              ? Colors.white
-                              : Colors.black,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFB7D4F6),
+                        borderRadius: BorderRadius.all(Radius.circular(100)),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today,
+                        size: 70,
+                        color:
+                            _isSessionActive
+                                ? Colors.white
+                                : _isSessionEnded
+                                ? Colors.white
+                                : Colors.black,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          // Debug information
-          Text(
-            'Class ID: ${widget.classData.id}',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-          if (_sessionInfo != null)
+            const SizedBox(height: 10),
+            // Debug information
             Text(
-              'Session ID: ${_sessionInfo!['id']}',
+              'Class ID: ${widget.classData.id}',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
-          const SizedBox(height: 10),
-          // Status text
-          if (_isLoadingSession)
-            const Text(
-              'Loading session...',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            )
-          else if (_isSessionActive)
-            Column(
-              children: [
-                const Text(
-                  'Session is active',
-                  style: TextStyle(color: Colors.blue, fontSize: 16),
-                ),
-                const Text(
-                  'Long press to end session',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
-            )
-          else if (_isSessionEnded)
-            const Text(
-              'Session has ended',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            )
-          else
-            const Text(
-              'Session is not active',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
-            ),
-          const SizedBox(height: 10),
-          // Session Info and Attendance List
-          Expanded(child: _buildSessionInfo()),
-        ],
+            if (_sessionInfo != null)
+              Text(
+                'Session ID: ${_sessionInfo!['id']}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            const SizedBox(height: 10),
+            // Status text
+            if (_isLoadingSession)
+              const Text(
+                'Loading session...',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              )
+            else if (_isSessionActive)
+              Column(
+                children: [
+                  const Text(
+                    'Session is active',
+                    style: TextStyle(color: Colors.blue, fontSize: 16),
+                  ),
+                  const Text(
+                    'Long press to end session',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              )
+            else if (_isSessionEnded)
+              const Text(
+                'Session has ended',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              )
+            else
+              const Text(
+                'Session is not active',
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+            const SizedBox(height: 10),
+            // Session Info and Attendance List
+            Expanded(child: _buildSessionInfo()),
+          ],
+        ),
       ),
     );
   }

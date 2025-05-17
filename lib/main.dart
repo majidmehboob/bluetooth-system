@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smart_track/screens/auth/app-initializer.dart';
+import 'package:smart_track/utils/colors.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: ColorStyle.BlueStatic),
       ),
       home: const AppInitializer(),
     );

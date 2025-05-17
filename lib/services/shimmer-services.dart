@@ -5,53 +5,83 @@ import 'package:smart_track/utils/colors.dart';
 class ShimmerHelper {
   static Widget buildHomePageShimmer(BuildContext context) {
     return Container(
-      color: ColorStyle.BlueStatic,
-      child: Shimmer.fromColors(
-        baseColor: Colors.white.withOpacity(0.2),
-        highlightColor: Colors.white.withOpacity(0.4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Search Bar Shimmer
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      color: ColorStyle.WhiteStatic,
+
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Search Bar Shimmer
+          Container(
+            color: ColorStyle.BlueStatic,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Shimmer.fromColors(
+              baseColor: ColorStyle.WhiteStatic.withOpacity(0.2),
+              highlightColor: ColorStyle.WhiteStatic.withOpacity(0.4),
               child: Container(
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: ColorStyle.BlueStatic,
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
             ),
+          ),
 
-            // Header Section with Image
-            Container(
-              width: double.infinity,
-              height: MediaQuery.of(context).size.height / 3.5,
-              decoration: const BoxDecoration(
-                color: Color(0xFF80A7D5),
-                borderRadius: BorderRadius.only(
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Class Info Shimmer
-                    Container(width: 250, height: 120, color: Colors.white),
-                  ],
-                ),
-              ),
+          // Header Section with Image
+          Container(
+            width: double.infinity,
+            height: MediaQuery.of(context).size.height / 3.5,
+            decoration: const BoxDecoration(
+              color: Color(0xFF80A7D5),
+              borderRadius: BorderRadius.only(bottomRight: Radius.circular(25)),
             ),
+            child: Stack(
+              children: [
+                // Class Info Shimmer
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Shimmer.fromColors(
+                    baseColor: ColorStyle.WhiteStatic.withOpacity(0.2),
+                    highlightColor: ColorStyle.WhiteStatic.withOpacity(0.4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...List.generate(
+                          4,
+                          (index) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Container(
+                              height: 8,
+                              width: index == 2 ? 100 : 150,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -4,
+                  bottom: -8,
+                  child: Image.asset('assets/images/Wireframe.png', width: 160),
+                ),
+              ],
+            ),
+          ),
 
-            // Class List Shimmer
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Container(height: 24, width: 150, color: Colors.white),
-            ),
-            SizedBox(
+          // Class List Shimmer
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Container(height: 10, width: 150, color: Colors.white),
+          ),
+          Shimmer.fromColors(
+            baseColor: ColorStyle.BlueStatic.withOpacity(0.2),
+            highlightColor: ColorStyle.BlueStatic.withOpacity(0.4),
+            child: SizedBox(
               height: 50,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
@@ -59,7 +89,7 @@ class ShimmerHelper {
                 itemCount: 4,
                 itemBuilder:
                     (_, __) => Container(
-                      width: 120,
+                      width: 140,
                       margin: const EdgeInsets.symmetric(horizontal: 5),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -68,40 +98,44 @@ class ShimmerHelper {
                     ),
               ),
             ),
+          ),
 
-            // Class Details Shimmer
-            Expanded(
+          // Class Details Shimmer
+          Expanded(
+            child: Shimmer.fromColors(
+              baseColor: ColorStyle.BlueStatic.withOpacity(0.2),
+              highlightColor: ColorStyle.BlueStatic.withOpacity(0.4),
               child: Padding(
                 padding: const EdgeInsets.all(15.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: Colors.black, width: 3),
                   ),
                   padding: const EdgeInsets.all(15.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(height: 28, width: 150, color: Colors.white),
+                      Container(
+                        height: 28,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+
                       const SizedBox(height: 15),
                       ...List.generate(
-                        7,
+                        5,
                         (index) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Container(
-                                height: 16,
-                                width: 80,
-                                color: Colors.white,
-                              ),
-                              Container(
-                                height: 16,
-                                width: 120,
-                                color: Colors.white,
-                              ),
-                            ],
+                          child: Container(
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                            ),
                           ),
                         ),
                       ),
@@ -119,8 +153,8 @@ class ShimmerHelper {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

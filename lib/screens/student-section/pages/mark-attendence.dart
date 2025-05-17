@@ -9,6 +9,7 @@ import 'package:smart_track/screens/student-section/drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:smart_track/services/time-helper.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -104,7 +105,8 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
         ),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
-
+      print("---------------------------------------------------");
+      print("---------------  $response ------------------------");
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -193,40 +195,63 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
     );
   }
 
-  // ... [Keep all your existing methods like _getDeviceInfo, _initBluetooth, etc.] ...
   Future<void> _getDeviceInfo() async {
     String deviceInfo = '';
-    if (Platform.isAndroid) {
-      deviceInfo = 'Android Device';
-    } else if (Platform.isIOS) {
-      deviceInfo = 'iOS Device';
-    }
 
     try {
-      final deviceName = await FlutterBluePlus.adapterName;
-      deviceInfo += ' - $deviceName';
-      print(deviceName);
-      print("pppppppppppppppppppppppppppppppppppppp");
-    } catch (e) {
-      debugPrint('Error getting device name: $e');
-    }
+      if (Platform.isAndroid) {
+        deviceInfo = 'Android';
+      } else if (Platform.isIOS) {
+        deviceInfo = 'iOS';
+      } else {
+        deviceInfo = 'Unknown Platform';
+      }
 
-    setState(() {
-      _deviceInfo = deviceInfo;
-    });
+      // Get Bluetooth adapter info
+      final adapterName = await FlutterBluePlus.adapterName.catchError((e) {
+        debugPrint('Error getting adapter name: $e');
+        return 'Unknown Device';
+      });
+
+      // final manufacturer = await FlutterBluePlus.adapterName.catchError(
+      //   (e) => 'Unknown Manufacturer',
+      // );
+
+      deviceInfo += ' - $adapterName';
+
+      // Print for debugging
+      print('Device Info: $deviceInfo');
+
+      setState(() {
+        _deviceInfo = deviceInfo;
+      });
+    } catch (e) {
+      debugPrint('Error getting device info: $e');
+      setState(() {
+        _deviceInfo = 'Error getting device info';
+      });
+    }
   }
 
   Future<void> _initBluetooth() async {
     try {
       await _requestPermissions();
       await _checkPermissions();
-
+      // Get initial state
+      _adapterState = await FlutterBluePlus.adapterState.first;
+      setState(() {});
       _adapterStateSubscription = FlutterBluePlus.adapterState.listen((state) {
         _adapterState = state;
         if (mounted) {
-          setState(() {});
+          setState(() {
+            _adapterState = state;
+            print('Bluetooth adapter state changed to: $state');
+          });
         }
       });
+
+      // Print current state
+      print('Initial Bluetooth state: $_adapterState');
     } catch (e) {
       setState(() {
         _errorMessage = 'Initialization error: ${e.toString()}';
@@ -234,21 +259,20 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
     }
   }
 
-  Future<void> _checkPermissions() async {
-    final statuses =
-        await [
-          Permission.bluetooth,
-          Permission.bluetoothAdvertise,
-          Permission.bluetoothScan,
-          Permission.bluetoothConnect,
-          Permission.location,
-        ].request();
-
-    if (statuses[Permission.bluetoothAdvertise]!.isDenied ||
-        statuses[Permission.bluetoothScan]!.isDenied ||
-        statuses[Permission.location]!.isDenied) {
-      throw Exception('Required permissions not granted');
+  Future<bool> _checkPermissions() async {
+    if (await Permission.bluetooth.isDenied) {
+      await Permission.bluetooth.request();
     }
+    if (await Permission.bluetoothAdvertise.isDenied) {
+      await Permission.bluetoothAdvertise.request();
+    }
+    if (await Permission.location.isDenied) {
+      await Permission.location.request();
+    }
+
+    return await Permission.bluetooth.isGranted &&
+        await Permission.bluetoothAdvertise.isGranted &&
+        await Permission.location.isGranted;
   }
 
   Future<void> _requestPermissions() async {
@@ -259,7 +283,7 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
 
   Future<void> _toggleBeaconTransmission() async {
     if (_isLoading) return;
-
+    print('Toggling beacon transmission. Current state: $_isAdvertising');
     setState(() {
       _isLoading = true;
       _errorMessage = '';
@@ -267,8 +291,10 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
 
     try {
       if (_isAdvertising) {
+        print('Stopping advertising...');
         await _stopAdvertising();
       } else {
+        print('Starting advertising...');
         await _startAdvertising();
       }
     } catch (e) {
@@ -276,6 +302,7 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
         _errorMessage = 'Error: ${e.toString()}';
       });
     } finally {
+      print('Toggle completed. New state: $_isAdvertising');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -305,6 +332,11 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
           .setUUID(uid)
           .setMajorId(100)
           .setMinorId(1)
+          .setIdentifier('com.yourcompany.smarttrack') // Add identifier
+          .setLayout(
+            'm:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24',
+          ) // Standard iBeacon layout
+          .setManufacturerId(0x004C) // Apple's company identifier
           .setTransmissionPower(-59)
           .start();
 
@@ -524,23 +556,26 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
                     const Divider(thickness: 1, color: Colors.grey),
                     InfoRow(
                       label: 'Punch In',
-                      value: widget.classData.startTime.toString() ?? 'N/A',
+                      value:
+                          TimeHelper.formatTimeOfDayForDisplay(
+                            widget.classData.startTime,
+                          ).toString(),
                     ),
                     const Divider(thickness: 1, color: Colors.grey),
                     InfoRow(
                       label: 'Punch Out',
-                      value: widget.classData.endTime.toString() ?? 'N/A',
+                      value:
+                          TimeHelper.formatTimeOfDayForDisplay(
+                            widget.classData.endTime,
+                          ).toString(),
                     ),
                     const Divider(thickness: 1, color: Colors.grey),
                     InfoRow(
                       label: 'Subject',
-                      value: widget.classData.course.toString() ?? 'N/A',
+                      value: widget.classData.course.toString(),
                     ),
                     const Divider(thickness: 1, color: Colors.grey),
-                    InfoRow(
-                      label: 'Room',
-                      value: widget.classData.room ?? 'N/A',
-                    ),
+                    InfoRow(label: 'Room', value: widget.classData.room),
                     const Divider(thickness: 1, color: Colors.grey),
                     InfoRow(
                       label: 'Bluetooth Status',

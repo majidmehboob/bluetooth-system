@@ -138,90 +138,106 @@ class _TodayReportScreenState extends State<TodayReportStudent> {
   }
 
   Widget _buildContent() {
-    return SingleChildScrollView(
+    return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Today's Report - $currentDay",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              "Date: $currentDate | Time: ${TimeHelper.formatTimeDayHourMinute(currentTime)}",
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            if (ongoingClasses.isEmpty &&
-                nottakenClasses.isEmpty &&
-                upcomingClasses.isEmpty &&
-                completedClasses.isEmpty)
-              Expanded(
-                child: NoClassesFound(
-                  onRefresh: _handleRefresh,
-                  message: 'No Class Schedule for today or Today is Sunday',
-                  parameter: ' Todays Classes',
-                ),
-              ),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Today's Report - $currentDay",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Date: $currentDate | Time: ${TimeHelper.formatTimeDayHourMinute(currentTime)}",
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  if (ongoingClasses.isEmpty &&
+                      nottakenClasses.isEmpty &&
+                      upcomingClasses.isEmpty &&
+                      completedClasses.isEmpty)
+                    NoClassesFound(
+                      onRefresh: _handleRefresh,
+                      message: 'No Class Schedule for today or Today is Sunday',
+                      parameter: ' Todays Classes',
+                    ),
 
-            // Ongoing Classes
-            if (ongoingClasses.isNotEmpty) ...[
-              _buildExpandableHeader(
-                "Ongoing Classes",
-                isOngoingExpanded,
-                () => setState(() => isOngoingExpanded = !isOngoingExpanded),
-              ),
-              const SizedBox(height: 8),
-              if (isOngoingExpanded) ...[
-                ..._buildClassList(ongoingClasses),
-                const SizedBox(height: 16),
-              ],
-            ],
-            const SizedBox(height: 6),
+                  // Ongoing Classes
+                  if (ongoingClasses.isNotEmpty) ...[
+                    _buildExpandableHeader(
+                      "Ongoing Classes",
+                      isOngoingExpanded,
+                      () => setState(
+                        () => isOngoingExpanded = !isOngoingExpanded,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (isOngoingExpanded) ...[
+                      ..._buildClassList(ongoingClasses),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                  const SizedBox(height: 6),
 
-            // Upcoming Classes
-            if (upcomingClasses.isNotEmpty) ...[
-              _buildExpandableHeader(
-                "Upcoming Classes",
-                isUpcomingExpanded,
-                () => setState(() => isUpcomingExpanded = !isUpcomingExpanded),
-              ),
-              const SizedBox(height: 8),
-              if (isUpcomingExpanded) ...[
-                ..._buildClassList(upcomingClasses),
-                const SizedBox(height: 16),
-              ],
-            ],
+                  // Upcoming Classes
+                  if (upcomingClasses.isNotEmpty) ...[
+                    _buildExpandableHeader(
+                      "Upcoming Classes",
+                      isUpcomingExpanded,
+                      () => setState(
+                        () => isUpcomingExpanded = !isUpcomingExpanded,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (isUpcomingExpanded) ...[
+                      ..._buildClassList(upcomingClasses),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
 
-            // Completed Classes
-            if (completedClasses.isNotEmpty) ...[
-              _buildExpandableHeader(
-                "Completed Classes",
-                isCompletedExpanded,
-                () =>
-                    setState(() => isCompletedExpanded = !isCompletedExpanded),
-              ),
-              const SizedBox(height: 8),
-              if (isCompletedExpanded) ...[
-                ..._buildClassList(completedClasses),
-              ],
-            ],
+                  // Completed Classes
+                  if (completedClasses.isNotEmpty) ...[
+                    _buildExpandableHeader(
+                      "Completed Classes",
+                      isCompletedExpanded,
+                      () => setState(
+                        () => isCompletedExpanded = !isCompletedExpanded,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (isCompletedExpanded) ...[
+                      ..._buildClassList(completedClasses),
+                    ],
+                  ],
 
-            // Not Taken Classes
-            if (nottakenClasses.isNotEmpty) ...[
-              _buildExpandableHeader(
-                "Not Taken Classes",
-                isNotTakenExpanded,
-                () => setState(() => isNotTakenExpanded = !isNotTakenExpanded),
+                  // Not Taken Classes
+                  if (nottakenClasses.isNotEmpty) ...[
+                    _buildExpandableHeader(
+                      "Not Taken Classes",
+                      isNotTakenExpanded,
+                      () => setState(
+                        () => isNotTakenExpanded = !isNotTakenExpanded,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (isNotTakenExpanded) ...[
+                      ..._buildClassList(nottakenClasses),
+                    ],
+                  ],
+                ],
               ),
-              const SizedBox(height: 8),
-              if (isNotTakenExpanded) ...[..._buildClassList(nottakenClasses)],
-            ],
-          ],
+            ]),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -262,7 +278,7 @@ class _TodayReportScreenState extends State<TodayReportStudent> {
   }
 
   List<Widget> _buildClassList(List<dynamic> classes) {
-    return List.generate(classes.length, (index) {
+    var list = List.generate(classes.length, (index) {
       final classInfo = classes[index];
 
       return Container(
@@ -352,5 +368,6 @@ class _TodayReportScreenState extends State<TodayReportStudent> {
         ),
       );
     });
+    return list;
   }
 }

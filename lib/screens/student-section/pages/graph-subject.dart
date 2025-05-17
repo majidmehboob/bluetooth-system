@@ -1,4 +1,3 @@
-import 'package:smart_track/screens/student-section/drawer.dart';
 import 'package:smart_track/widgets/snackbar-helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_heatmap_calendar/flutter_heatmap_calendar.dart';
@@ -10,12 +9,19 @@ import 'package:intl/intl.dart';
 import 'package:smart_track/utils/colors.dart';
 
 class SingleSubjectGraphStudent extends StatefulWidget {
+  // final String studentName;
   final int semesterId;
   final int courseId;
+  final String course;
+  final String code;
+  // final String rollNumber;
   const SingleSubjectGraphStudent({
     super.key,
+    // required this.studentName,
+    required this.course,
     required this.semesterId,
     required this.courseId,
+    required this.code,
   });
 
   @override
@@ -23,13 +29,12 @@ class SingleSubjectGraphStudent extends StatefulWidget {
 }
 
 class _HistorySlugState extends State<SingleSubjectGraphStudent> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   DateTime? _selectedDay;
   DateTime _focusedDay = DateTime.now();
   bool _isLoading = true;
   Map<String, dynamic> _attendanceData = {};
   double _attendancePercentage = 0.0;
-  String _courseName = 'Loading...';
+  DateTime _currentPage = DateTime.now();
 
   @override
   void initState() {
@@ -56,11 +61,12 @@ class _HistorySlugState extends State<SingleSubjectGraphStudent> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print("----------------------------------------------");
+        print(data);
         setState(() {
           _attendanceData = data['attendance_data'] ?? {};
           _attendancePercentage =
               (data['attendance_percentage'] as num?)?.toDouble() ?? 0.0;
-          _courseName = 'Course ${widget.courseId}';
           _isLoading = false;
         });
       } else {
@@ -102,26 +108,14 @@ class _HistorySlugState extends State<SingleSubjectGraphStudent> {
     });
 
     return Scaffold(
-      key: _scaffoldKey,
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-      ),
-      drawer: const CustomDrawer(
-        backgroundColor: Colors.white,
-        iconColor: Colors.black,
-      ),
+      appBar: AppBar(title: Text(widget.course)),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 2.0,
+                  vertical: 10.0,
                   horizontal: 12.0,
                 ),
                 child: Column(
@@ -136,7 +130,7 @@ class _HistorySlugState extends State<SingleSubjectGraphStudent> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 20),
                     Container(
                       width: MediaQuery.of(context).size.width,
                       color: Colors.white,
@@ -162,84 +156,148 @@ class _HistorySlugState extends State<SingleSubjectGraphStudent> {
                         },
                       ),
                     ),
+                    const SizedBox(height: 20),
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Column(
                         children: [
-                          Text(
-                            _courseName,
-                            style: TextStyle(
-                              color: Color(0xFF282424),
-                              fontSize: 20,
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                          Text(
+                          _buildDetailRow(
+                            widget.course,
                             '${_attendancePercentage.toStringAsFixed(1)}%',
-                            style: TextStyle(
-                              color: Color(0xFF282424),
-                              fontSize: 20,
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.w300,
-                            ),
                           ),
+                          SizedBox(height: 4),
+                          _buildDetailRow(widget.code, ""),
                         ],
                       ),
                     ),
                     Expanded(
-                      flex: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                        child: Container(
-                          width: MediaQuery.of(context).size.width - 100,
-                          height: 250,
-                          color: Colors.white,
-                          child: TableCalendar(
-                            focusedDay: _focusedDay,
-                            shouldFillViewport: true,
-                            headerVisible: true,
-                            rowHeight: 37.0,
-                            calendarStyle: CalendarStyle(
-                              outsideDaysVisible: false,
-                              selectedDecoration: const BoxDecoration(
-                                color: Color(0xFFB2CCDF),
-                                shape: BoxShape.circle,
-                              ),
-                              todayDecoration: const BoxDecoration(
-                                color: Color(0xFFB2CCDF),
-                                shape: BoxShape.circle,
-                              ),
-                              rangeHighlightColor: Colors.grey,
-                              markerDecoration: const BoxDecoration(
-                                color: Color(0xFFB2CCDF),
-                                shape: BoxShape.circle,
-                              ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.symmetric(horizontal: 10.0),
+                            padding: EdgeInsets.symmetric(vertical: 2.0),
+                            width: MediaQuery.of(context).size.width,
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(
+                                    0.5,
+                                  ), // Shadow color
+                                  spreadRadius: 5, // How far the shadow spreads
+                                  blurRadius: 7, // How soft the shadow looks
+                                  offset: Offset(
+                                    0,
+                                    3,
+                                  ), // Position of the shadow (x, y)
+                                ),
+                              ],
+                              // border: Border.all(
+                              //   color: Colors.grey,
+                              //   width: 0.5,
+                              // ),
+                              color: Colors.white,
                             ),
-                            firstDay: DateTime.now().subtract(
-                              const Duration(days: 365),
+                            height: 260,
+
+                            child: TableCalendar(
+                              focusedDay: _focusedDay,
+                              firstDay: DateTime.now().subtract(
+                                const Duration(days: 365),
+                              ),
+                              lastDay: DateTime.now().add(
+                                const Duration(days: 365),
+                              ),
+                              currentDay: _selectedDay,
+                              shouldFillViewport: true,
+                              headerVisible: true,
+                              rowHeight: 37.0,
+                              calendarStyle: CalendarStyle(
+                                outsideDaysVisible: false,
+                                selectedDecoration: const BoxDecoration(
+                                  color: Color(0xFFB2CCDF),
+                                  shape: BoxShape.circle,
+                                ),
+                                todayDecoration: const BoxDecoration(
+                                  color: Color(0xFFB2CCDF),
+                                  shape: BoxShape.circle,
+                                ),
+                                rangeHighlightColor: Colors.grey,
+                                markerDecoration: const BoxDecoration(
+                                  color: Color(0xFFB2CCDF),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              // Add this to track page changes
+                              onPageChanged: (focusedDay) {
+                                setState(() {
+                                  _currentPage = focusedDay;
+                                  _focusedDay = focusedDay;
+                                });
+                              },
+                              selectedDayPredicate:
+                                  (day) => isSameDay(_selectedDay, day),
+                              onDaySelected: (selectedDay, focusedDay) {
+                                setState(() {
+                                  _selectedDay = selectedDay;
+                                  _focusedDay = focusedDay;
+                                });
+                              },
+
+                              pageAnimationEnabled: true,
+                              pageJumpingEnabled: true,
+                              availableCalendarFormats: const {
+                                CalendarFormat.month: 'Month',
+                              },
+                              calendarBuilders: CalendarBuilders(),
+                              headerStyle: HeaderStyle(
+                                formatButtonVisible: false,
+                                titleCentered: true,
+                              ),
+                              calendarFormat: CalendarFormat.month,
+                              availableGestures: AvailableGestures.all,
+                              startingDayOfWeek: StartingDayOfWeek.monday,
+                              // Add this controller
                             ),
-                            lastDay: DateTime.now().add(
-                              const Duration(days: 365),
-                            ),
-                            selectedDayPredicate:
-                                (day) => isSameDay(_selectedDay, day),
-                            onDaySelected: (selectedDay, focusedDay) {
-                              setState(() {
-                                _selectedDay = selectedDay;
-                                _focusedDay = focusedDay;
-                              });
-                            },
                           ),
-                        ),
+                          const SizedBox(height: 1.0),
+                          _buildAttendanceInfoCard(),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 1.0),
-                    _buildAttendanceInfoCard(),
                   ],
                 ),
               ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 0.5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.black45,
+              fontSize: 20,
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.black45,
+              fontSize: 20,
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -259,7 +317,7 @@ class _HistorySlugState extends State<SingleSubjectGraphStudent> {
       statusText = 'No Data';
       percentageText = '--%';
     } else if (attendanceStatus['present'] == true) {
-      cardColor = ColorStyle.BlueStatic;
+      cardColor = Color(0xFFB2CCDF);
       statusText = 'Present';
       percentageText =
           '${attendanceStatus['percentage']?.toStringAsFixed(1) ?? '--'}%';
@@ -275,9 +333,9 @@ class _HistorySlugState extends State<SingleSubjectGraphStudent> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Color.fromRGBO(246, 246, 246, 1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -348,7 +406,7 @@ class _HistorySlugState extends State<SingleSubjectGraphStudent> {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.grey,
+            color: Colors.black45,
             fontSize: 14,
             fontFamily: 'Roboto',
             fontWeight: FontWeight.w300,
