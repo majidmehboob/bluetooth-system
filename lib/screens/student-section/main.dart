@@ -416,7 +416,7 @@ class _StudentHomeScreenState extends State<HomeStudent> {
               vertical: 35.0,
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (currentClass != null && currentClass?.status != "completed")
@@ -433,7 +433,11 @@ class _StudentHomeScreenState extends State<HomeStudent> {
                         },
                   )
                 else if (nextClass != null)
-                  BuildNextClassCard(nextClass!, nextClassRemainingTime)
+                  BuildNextClassCard(
+                    classInfo: nextClass!,
+                    nextClassRemainingTime: nextClassRemainingTime,
+                    isStudent: true,
+                  )
                 else
                   noClassDetail(Colors.white),
               ],
@@ -689,8 +693,11 @@ class _StudentHomeScreenState extends State<HomeStudent> {
           builder: (context) => MarkAttendenceStudent(classData: classData),
         ),
       );
-      await _fetchClassData();
-      _updateClassStates();
+      // This code will execute when returning from MarkAttendenceStudent
+      if (mounted) {
+        await _fetchClassData();
+        _updateClassStates();
+      }
     }
   }
 }

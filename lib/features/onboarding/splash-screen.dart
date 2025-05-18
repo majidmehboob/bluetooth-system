@@ -1,6 +1,6 @@
 // lib/features/onboarding/splash_screen.dart
 import 'package:flutter/material.dart';
-import 'package:smart_track/Services/share-preference-services.dart';
+import 'package:smart_track/services/share-preference-services.dart';
 import 'package:smart_track/widgets/system-ui.dart';
 import './onboarding-screen.dart';
 
@@ -24,9 +24,10 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _initializeApp() async {
     await Future.delayed(const Duration(seconds: 2));
     final prefs = await SharedPreferencesService.init();
+    bool firstRun = await prefs.isFirstRunTime(); // Now this will work
     final onboardingComplete = await prefs.getOnboardingComplete();
 
-    if (!onboardingComplete) {
+    if (firstRun || !onboardingComplete) {
       // Show onboarding if not completed
       Navigator.pushReplacement(
         context,

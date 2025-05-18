@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:smart_track/screens/student-section/main.dart';
+import 'package:smart_track/screens/student-section/pages/class-details-current.dart';
 import 'package:smart_track/utils/colors.dart';
 import 'package:smart_track/services/class-information-services.dart';
 import 'package:beacon_broadcast/beacon_broadcast.dart';
@@ -17,13 +18,8 @@ import 'dart:convert';
 
 class MarkAttendenceStudent extends StatefulWidget {
   final ClassInfo classData;
-  final int? sessionId;
 
-  const MarkAttendenceStudent({
-    super.key,
-    required this.classData,
-    this.sessionId,
-  });
+  const MarkAttendenceStudent({super.key, required this.classData});
 
   @override
   State<MarkAttendenceStudent> createState() => _BluetoothScreenState();
@@ -83,14 +79,16 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
   }
 
   Future<void> _checkSessionStatus() async {
-    _attendanceTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+    _attendanceTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
       _fetchAttendanceData();
     });
   }
 
   Future<void> _fetchAttendanceData() async {
-    if (widget.sessionId == null || _registrationNumber.isEmpty) return;
-
+    if (widget.classData.attendanceSessionId == null ||
+        _registrationNumber.isEmpty)
+      return;
+    print(widget.classData.attendanceSessionId);
     try {
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('accessToken');
@@ -101,12 +99,12 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
 
       final response = await http.get(
         Uri.parse(
-          'https://bluetooth-attendence-system.tech-vikings.com/dashboard/mark-attendance?session_id=${widget.sessionId}&request_type=single_student&registration_number=$_registrationNumber',
+          'https://bluetooth-attendence-system.tech-vikings.com/dashboard/mark-attendance?session_id=${widget.classData.attendanceSessionId}&request_type=single_student&registration_number=$_registrationNumber',
         ),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
       print("---------------------------------------------------");
-      print("---------------  $response ------------------------");
+      print("---------------  ${response.body} ------------------------");
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -183,7 +181,11 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
                     MaterialPageRoute(
                       builder:
                           (context) => AttendanceRecordsPage(
+                            studentinfo: _attendanceData!['student_info'],
+                            sessioninfo: _attendanceData!['session_info'],
                             records: _attendanceData!['attendance_records'],
+                            attendancesummary:
+                                _attendanceData!['attendance_summary'],
                           ),
                     ),
                   );
@@ -547,6 +549,7 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+
                   children: [
                     InfoRow(
                       label: 'Device Info',
@@ -608,7 +611,7 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               if (_attendanceData != null)
                 ElevatedButton(
                   onPressed: () {
@@ -617,52 +620,21 @@ class _BluetoothScreenState extends State<MarkAttendenceStudent> {
                       MaterialPageRoute(
                         builder:
                             (context) => AttendanceRecordsPage(
+                              studentinfo: _attendanceData!['student_info'],
+                              sessioninfo: _attendanceData!['session_info'],
                               records: _attendanceData!['attendance_records'],
+                              attendancesummary:
+                                  _attendanceData!['attendance_summary'],
                             ),
                       ),
                     );
                   },
                   child: const Text('View Attendance Records'),
                 ),
+              const SizedBox(height: 10),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class AttendanceRecordsPage extends StatelessWidget {
-  final List<dynamic> records;
-
-  const AttendanceRecordsPage({super.key, required this.records});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Attendance Records')),
-      body: ListView.builder(
-        itemCount: records.length,
-        itemBuilder: (context, index) {
-          final record = records[index];
-          return Card(
-            margin: const EdgeInsets.all(8.0),
-            child: ListTile(
-              leading: Icon(
-                record['is_present'] ? Icons.check_circle : Icons.cancel,
-                color: record['is_present'] ? Colors.green : Colors.red,
-              ),
-              title: Text(record['scanned_time']),
-              subtitle: Text('Method: ${record['method']}'),
-              trailing: Text(
-                record['is_present'] ? 'Present' : 'Absent',
-                style: TextStyle(
-                  color: record['is_present'] ? Colors.green : Colors.red,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

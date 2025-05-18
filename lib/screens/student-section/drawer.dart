@@ -4,6 +4,7 @@ import 'package:smart_track/screens/auth/log-in.dart';
 import 'package:smart_track/screens/student-section/pages/schedule.dart';
 import 'package:smart_track/screens/student-section/pages/graph-enroll.dart';
 import 'package:smart_track/screens/student-section/pages/today-report.dart';
+import 'package:smart_track/services/share-preference-services.dart';
 import 'package:smart_track/utils/colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,8 +40,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
   }
 
   Future<void> logoutUser() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    final prefs = await SharedPreferencesService.init();
+    await prefs.clearAll();
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LogInPage()),

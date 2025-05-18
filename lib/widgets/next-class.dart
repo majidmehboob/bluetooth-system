@@ -3,10 +3,12 @@ import 'package:smart_track/services/class-information-services.dart';
 import 'package:smart_track/services/text-helper.dart';
 import 'package:smart_track/services/time-helper.dart';
 
-Widget BuildNextClassCard(
-  ClassInfo classInfo,
-  Duration? nextClassRemainingTime,
-) {
+Widget BuildNextClassCard({
+  required ClassInfo classInfo,
+  required Duration? nextClassRemainingTime,
+  required bool? isStudent,
+}) {
+  final bool studentPage = isStudent != null && isStudent == true;
   return Container(
     child: ConstrainedBox(
       constraints: BoxConstraints(maxWidth: 250),
@@ -32,6 +34,18 @@ Widget BuildNextClassCard(
               color: Color(0xFF5C5C5C),
               fontFamily: 'Roboto',
               fontWeight: FontWeight.w400,
+            ),
+          ),
+          const SizedBox(height: 3),
+
+          Text(
+            '${TimeHelper.formatTimeOfDayForDisplay(classInfo.startTime)} - ${TimeHelper.formatTimeOfDayForDisplay(classInfo.endTime)}',
+            style: TextStyle(
+              fontSize: 15,
+              color: studentPage ? Colors.black : Colors.grey[600],
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.normal,
+              height: 0,
             ),
           ),
           const SizedBox(height: 10),

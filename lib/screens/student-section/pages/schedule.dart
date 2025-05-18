@@ -187,22 +187,38 @@ class _ScheduleState extends State<ScheduleStudent> {
 
             // Calendar
             Container(
-              decoration: BoxDecoration(
-                color: ColorStyle.BlueStatic,
-                borderRadius: BorderRadius.circular(8),
-              ),
+              padding: EdgeInsets.symmetric(vertical: 6.0),
+              decoration: BoxDecoration(color: ColorStyle.BlueStatic),
               child: TableCalendar(
                 focusedDay: _focusedDay,
                 firstDay: DateTime.now().subtract(const Duration(days: 365)),
                 lastDay: DateTime.now().add(const Duration(days: 365)),
                 headerVisible: true,
+                headerStyle: HeaderStyle(
+                  titleCentered: true,
+                  formatButtonDecoration: BoxDecoration(
+                    color: Colors.white70,
+                    border: Border.all(color: Colors.white70),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  titleTextStyle: TextStyle(
+                    color: Colors.black,
+                    fontFamily: 'Roboto',
+                    fontSize: 18,
+                  ),
+                ),
                 rowHeight: 37,
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: TextStyle(color: Colors.white60),
+                  weekendStyle: TextStyle(color: Colors.white60),
+                ),
                 calendarStyle: CalendarStyle(
                   outsideDaysVisible: false,
+                  weekendTextStyle: TextStyle(color: Colors.white70),
+                  defaultTextStyle: TextStyle(color: Colors.white70),
                   selectedTextStyle: TextStyle(color: Colors.black),
-                  selectedDecoration: BoxDecoration(
-                    color: Colors.white,
-                    // borderRadius: BorderRadius.circular(12),
+                  selectedDecoration: const BoxDecoration(
+                    color: Colors.white70,
                     shape: BoxShape.circle,
                   ),
                   todayDecoration: const BoxDecoration(
@@ -490,6 +506,8 @@ class _ScheduleState extends State<ScheduleStudent> {
   }
 
   void _navigateToClassDetails(Map<String, dynamic> classData) {
+    print(classData);
+    print("00000000000000000000000000000");
     Navigator.push(
       context,
       MaterialPageRoute(

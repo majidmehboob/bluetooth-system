@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smart_track/screens/teacher-section/drawer.dart';
+import 'package:smart_track/screens/teacher-section/pages/attendence-detail.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -374,6 +375,15 @@ class _ScheduleState extends State<ScheduleTeacher> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToClassDetails(Map<String, dynamic> classData) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AttendanceDetailsTeacher(sessionId: 1),
       ),
     );
   }

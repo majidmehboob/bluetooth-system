@@ -20,6 +20,8 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    print("--------------------------------------------");
+    print(widget.classData);
     if (widget.classData['class_status']?.toString().toLowerCase() ==
         'completed') {
       _fetchAttendanceDetails();
@@ -41,7 +43,7 @@ class _ClassDetailsScreenState extends State<ClassDetailsScreen> {
         throw Exception('Missing required credentials');
       }
 
-      final sessionId = widget.classData['id']?.toString();
+      final sessionId = widget.classData['attendance_session_id']?.toString();
       if (sessionId == null) {
         throw Exception('Session ID not found');
       }

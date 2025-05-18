@@ -6,6 +6,7 @@ import 'package:smart_track/screens/auth/log-in.dart';
 import 'package:smart_track/widgets/system-ui.dart';
 import './onboarding-item.dart';
 import './onboarding-page.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onCompleted;
@@ -78,6 +79,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
+    // Request notification permission
+    // await _requestNotificationPermission();
     final prefs = await SharedPreferencesService.init();
     await prefs.setOnboardingComplete(true);
     widget.onCompleted();
@@ -85,6 +88,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       context,
       MaterialPageRoute(builder: (context) => LogInPage()),
     );
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    // You'll need to add the permission_handler package for this
+    // Add to pubspec.yaml: permission_handler: ^10.4.0
+    // Add to AndroidManifest.xml and Info.plist the required permissions
+
+    final status = await Permission.notification.request();
+    if (status.isDenied) {
+      // Handle case where user denied permission
+      // You might want to show a message explaining why notifications are useful
+    }
   }
 
   @override
@@ -140,6 +155,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 12,

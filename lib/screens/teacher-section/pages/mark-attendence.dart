@@ -38,6 +38,10 @@ class _BluetoothScreenState extends State<MarkAttendenceTeacher> {
   final bool _isLoadingAttendance = false;
   bool _showSessionEndedDialog = false;
   final bool _isFirstDataLoad = true;
+  // For scroll controller and floating action button visibility
+  final ScrollController _scrollController = ScrollController();
+  bool _showBackToTopButton = false;
+
   @override
   void initState() {
     super.initState();
@@ -48,13 +52,38 @@ class _BluetoothScreenState extends State<MarkAttendenceTeacher> {
         _startAttendancePolling();
       }
     });
+    // Initialize scroll controller listener
+    _scrollController.addListener(() {
+      // Show back to top button when scrolling down
+      if (_scrollController.offset >= 400 && !_showBackToTopButton) {
+        setState(() {
+          _showBackToTopButton = true;
+        });
+      }
+      // Hide back to top button when at top
+      else if (_scrollController.offset < 400 && _showBackToTopButton) {
+        setState(() {
+          _showBackToTopButton = false;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     _attendancePollingTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  // Scroll to top method
+  void _scrollToTop() {
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   // Add this method to check time and show dialog
@@ -607,6 +636,195 @@ class _BluetoothScreenState extends State<MarkAttendenceTeacher> {
     );
   }
 
+  Widget _buildAttendanceList() {
+    if (_isLoadingAttendance) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_attendanceSummary.isEmpty) {
+      return const Center(child: Text('No attendance data available'));
+    }
+
+    return ListView.builder(
+      physics: const NeverScrollableScrollPhysics(), // Disable inner scrolling
+      shrinkWrap: true, // Important for nested ListView
+      itemCount: _attendanceSummary.length,
+      itemBuilder: (context, index) {
+        final entry = _attendanceSummary.entries.elementAt(index);
+        final rollNumber = entry.key.toString();
+        final data = entry.value as Map<String, dynamic>;
+
+        double percentage = (data['percentage'] ?? 0).toDouble();
+        percentage = percentage.clamp(0.0, 100.0);
+
+        return Container(
+          height: 200,
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.all(12.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _isSessionActive ? ColorStyle.BlueStatic : Colors.grey,
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['student_name'] ?? 'UnKnown',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      Text(
+                        rollNumber,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF293646),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Section ${_sessionInfo?['section_name'].toString().toUpperCase() ?? widget.classData.section}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF6A7D94),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    inactiveThumbColor: Colors.white,
+                    activeTrackColor: Colors.green[200],
+                    inactiveTrackColor: Colors.red[200],
+                    value: data['is_present'] ?? false,
+                    onChanged:
+                        _isUpdatingAttendance
+                            ? null
+                            : (value) async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: Text(
+                                        'Mark ${data['student_name']} as ${value ? 'Present' : 'Absent'}?',
+                                      ),
+                                      content: Text(
+                                        'Are you sure you want to update attendance status for ${data['student_name']}?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () =>
+                                                  Navigator.pop(context, false),
+                                          child: const Text(
+                                            'Cancel',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed:
+                                              () =>
+                                                  Navigator.pop(context, true),
+                                          child: Text(
+                                            'Confirm',
+                                            style: TextStyle(
+                                              color: ColorStyle.BlueStatic,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                              );
+
+                              if (confirmed == true && mounted) {
+                                setState(() {
+                                  _attendanceSummary[rollNumber]?['is_present'] =
+                                      value;
+                                  _isUpdatingAttendance = true;
+                                });
+
+                                await _updateTeacherAttendance(
+                                  rollNumber,
+                                  value,
+                                );
+
+                                if (mounted) {
+                                  setState(() => _isUpdatingAttendance = false);
+                                }
+                              }
+                            },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 8,
+                  disabledActiveTrackColor:
+                      percentage >= 75 ? Colors.green : Colors.red,
+                  disabledInactiveTrackColor: Colors.black12,
+                  disabledThumbColor:
+                      percentage >= 75 ? Colors.green[200] : Colors.red[200],
+                  thumbShape: const RoundSliderThumbShape(
+                    disabledThumbRadius: 10,
+                  ),
+                  overlayColor: Colors.transparent,
+                ),
+                child: Slider(
+                  value: percentage,
+                  min: 0,
+                  max: 100,
+                  divisions: 10,
+                  label: '${percentage.toStringAsFixed(1)}%',
+                  onChanged: null,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Total Records: ${data['total_records'] ?? 'N/A'}',
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                  Row(
+                    children: [
+                      Text('Percentage:'),
+                      Text(
+                        ' $percentage %',
+                        style: TextStyle(
+                          color:
+                              percentage >= 75
+                                  ? Colors.green[200]
+                                  : Colors.red[200],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildSessionInfo() {
     if (_isLoadingSession) {
       return _buildSessionShimmer();
@@ -622,257 +840,138 @@ class _BluetoothScreenState extends State<MarkAttendenceTeacher> {
               style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            // ElevatedButton(
-            //   onPressed: _createAttendanceSession,
-            //   child: const Text('Start New Session'),
-            // ),
           ],
         ),
       );
     }
 
+    return _buildAttendanceList();
+  }
+
+  Widget _buildContent() {
     return Column(
       children: [
-        if (_isSessionEnded || _isSessionActive)
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_isLoadingAttendance)
-                  const Center(child: CircularProgressIndicator())
-                else if (_attendanceSummary.isEmpty)
-                  const Center(child: Text('No attendance data available'))
-                else
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _fetchAttendanceData,
-                      child: ListView.builder(
-                        itemCount: _attendanceSummary.length,
-                        itemBuilder: (context, index) {
-                          final entry = _attendanceSummary.entries.elementAt(
-                            index,
-                          );
-                          final rollNumber =
-                              entry.key.toString(); // Ensure this is a string
-                          final data = entry.value as Map<String, dynamic>;
-
-                          // Ensure percentage is between 0 and 100
-                          double percentage =
-                              (data['percentage'] ?? 0).toDouble();
-                          percentage = percentage.clamp(0.0, 100.0);
-                          // final entry = _attendanceSummary.entries.elementAt(
-                          //   index,
-                          // );
-                          // final rollNumber = entry.key;
-                          // final data = entry.value as Map<String, dynamic>;
-
-                          // // Ensure percentage is between 0 and 100
-                          // double percentage =
-                          //     (data['percentage'] ?? 0).toDouble();
-                          // percentage = percentage.clamp(0.0, 100.0);
-
-                          return Container(
-                            height: 200,
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 10,
-                            ),
-                            padding: const EdgeInsets.all(12.0),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color:
-                                    _isSessionActive
-                                        ? ColorStyle.BlueStatic
-                                        : Colors.grey,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          data['student_name'] ?? 'UnKnown',
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontFamily: 'Roboto',
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        Text(
-                                          rollNumber,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF293646),
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Section ${_sessionInfo?['section_name'].toString().toUpperCase() ?? widget.classData.section}',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Color(0xFF6A7D94),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Switch(
-                                      activeColor: ColorStyle.BlueStatic,
-                                      activeTrackColor: Colors.grey[200],
-                                      inactiveThumbColor: ColorStyle.BlueStatic,
-                                      inactiveTrackColor: Colors.grey[200],
-                                      value: data['is_present'] ?? false,
-                                      onChanged:
-                                          _isUpdatingAttendance
-                                              ? null
-                                              : (value) async {
-                                                // Show confirmation dialog
-                                                final confirmed = await showDialog<
-                                                  bool
-                                                >(
-                                                  context: context,
-                                                  builder:
-                                                      (context) => AlertDialog(
-                                                        title: Text(
-                                                          'Mark ${data['student_name']} as ${value ? 'Present' : 'Absent'}?',
-                                                        ),
-                                                        content: Text(
-                                                          'Are you sure you want to update attendance status for ${data['student_name']}?',
-                                                        ),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed:
-                                                                () =>
-                                                                    Navigator.pop(
-                                                                      context,
-                                                                      false,
-                                                                    ),
-                                                            child: const Text(
-                                                              'Cancel',
-                                                              style: TextStyle(
-                                                                color:
-                                                                    Colors.grey,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          TextButton(
-                                                            onPressed:
-                                                                () =>
-                                                                    Navigator.pop(
-                                                                      context,
-                                                                      true,
-                                                                    ),
-                                                            child: Text(
-                                                              'Confirm',
-                                                              style: TextStyle(
-                                                                color:
-                                                                    ColorStyle
-                                                                        .BlueStatic,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                );
-
-                                                if (confirmed == true &&
-                                                    mounted) {
-                                                  // Show loading state
-                                                  setState(() {
-                                                    _attendanceSummary[rollNumber]?['is_present'] =
-                                                        value;
-                                                    _isUpdatingAttendance =
-                                                        true;
-                                                  });
-
-                                                  // Call API to update attendance
-                                                  await _updateTeacherAttendance(
-                                                    rollNumber,
-                                                    value,
-                                                  );
-
-                                                  if (mounted) {
-                                                    setState(
-                                                      () =>
-                                                          _isUpdatingAttendance =
-                                                              false,
-                                                    );
-                                                  }
-                                                }
-                                              }, // Make switch read-only
-                                    ),
-                                    // CustomSwitch(
-                                    //   value: data['is_present'] ?? false,
-                                    //   onChanged:
-                                    //       (value) {}, // Make switch read-only
-                                    // ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                SliderTheme(
-                                  data: SliderTheme.of(context).copyWith(
-                                    disabledActiveTrackColor:
-                                        ColorStyle.BlueStatic, // Add this
-                                    disabledInactiveTickMarkColor:
-                                        Colors.grey[200],
-                                    trackHeight: 6,
-
-                                    disabledThumbColor: ColorStyle.BlueStatic,
-                                    thumbShape: const RoundSliderThumbShape(
-                                      enabledThumbRadius: 10,
-                                      disabledThumbRadius: 10,
-                                    ),
-                                    // overlayColor: Colors.purple.withAlpha(32),
-                                    // overlayShape: RoundSliderOverlayShape(
-                                    // overlayRadius: 14.0,
-                                    // ),
-                                    // inactiveTickMarkColor: Colors.grey[400],
-                                    // activeTickMarkColor:
-                                    //     ColorStyle
-                                    //         .BlueStatic, // Add this for better visibility
-                                  ),
-                                  child: Slider(
-                                    value: percentage,
-                                    min: 0,
-                                    max: 100,
-                                    divisions: 10,
-                                    label: '${percentage.toStringAsFixed(1)}%',
-                                    onChanged: null,
-                                    // activeColor: ColorStyle.BlueStatic,
-                                    // inactiveColor: Colors.grey[300],
-                                  ),
-                                ),
-                                SizedBox(height: 2),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(data['total_records'].toString()),
-                                    Text(data['percentage'].toString() ?? '00'),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+        const SizedBox(height: 15),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            children: [
+              Text(
+                _formattedTime,
+                style: const TextStyle(
+                  fontSize: 50,
+                  fontWeight: FontWeight.w300,
+                  fontFamily: 'Roboto',
+                  color: Color(0xFF293646),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$_formattedDate - $_formattedDay',
+                style: const TextStyle(
+                  color: Color(0xFF6A7D94),
+                  fontSize: 14,
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 30),
+        GestureDetector(
+          onLongPress: _isSessionActive ? _endAttendanceSession : null,
+          onTap:
+              !_isSessionActive && !_isCreatingSession
+                  ? _createAttendanceSession
+                  : null,
+          child: Center(
+            child: Container(
+              width: 180,
+              height: 180,
+              padding: const EdgeInsets.all(18.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(110),
+                color:
+                    _isCreatingSession
+                        ? Colors.grey
+                        : _isSessionActive
+                        ? Colors.blue
+                        : _isSessionEnded
+                        ? Colors.grey
+                        : const Color(0xFF9CCAF9),
+              ),
+              child: Container(
+                width: 90,
+                height: 90,
+                padding: const EdgeInsets.all(6.0),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFCFE2F8),
+                  borderRadius: BorderRadius.all(Radius.circular(100)),
+                ),
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFB7D4F6),
+                    borderRadius: BorderRadius.all(Radius.circular(100)),
                   ),
-              ],
+                  child: Icon(
+                    Icons.calendar_today,
+                    size: 70,
+                    color:
+                        _isSessionActive
+                            ? Colors.white
+                            : _isSessionEnded
+                            ? Colors.white
+                            : Colors.black,
+                  ),
+                ),
+              ),
             ),
           ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Class ID: ${widget.classData.id}',
+          style: const TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        if (_sessionInfo != null)
+          Text(
+            'Session ID: ${_sessionInfo!['id']}',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        const SizedBox(height: 10),
+        if (_isLoadingSession)
+          const Text(
+            'Loading session...',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          )
+        else if (_isSessionActive)
+          Column(
+            children: [
+              const Text(
+                'Session is active',
+                style: TextStyle(color: Colors.blue, fontSize: 16),
+              ),
+              const Text(
+                'Long press to end session',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          )
+        else if (_isSessionEnded)
+          const Text(
+            'Session has ended',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          )
+        else
+          const Text(
+            'Session is not active',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
+        const SizedBox(height: 10),
+        _buildSessionInfo(),
       ],
     );
   }
@@ -896,140 +995,379 @@ class _BluetoothScreenState extends State<MarkAttendenceTeacher> {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            const SizedBox(height: 15),
-            // Header with Time and Date
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                children: [
-                  Text(
-                    _formattedTime,
-                    style: const TextStyle(
-                      fontSize: 50,
-                      fontWeight: FontWeight.w300,
-                      fontFamily: 'Roboto',
-                      color: Color(0xFF293646),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$_formattedDate - $_formattedDay',
-                    style: const TextStyle(
-                      color: Color(0xFF6A7D94),
-                      fontSize: 14,
-                      fontFamily: 'Roboto',
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 30),
-            // Session Button
-            GestureDetector(
-              onLongPress: _isSessionActive ? _endAttendanceSession : null,
-              onTap:
-                  !_isSessionActive && !_isCreatingSession
-                      ? _createAttendanceSession
-                      : null,
-              child: Center(
-                child: Container(
-                  width: 180,
-                  height: 180,
-                  padding: const EdgeInsets.all(18.0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(110),
-                    color:
-                        _isCreatingSession
-                            ? Colors.grey
-                            : _isSessionActive
-                            ? Colors.blue
-                            : _isSessionEnded
-                            ? Colors.grey
-                            : const Color(0xFF9CCAF9),
-                  ),
-                  child: Container(
-                    width: 90,
-                    height: 90,
-                    padding: const EdgeInsets.all(6.0),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFCFE2F8),
-                      borderRadius: BorderRadius.all(Radius.circular(100)),
-                    ),
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFB7D4F6),
-                        borderRadius: BorderRadius.all(Radius.circular(100)),
+      body: RefreshIndicator(
+        onRefresh: _fetchAttendanceData,
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 15),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        _formattedTime,
+                        style: const TextStyle(
+                          fontSize: 50,
+                          fontWeight: FontWeight.w300,
+                          fontFamily: 'Roboto',
+                          color: Color(0xFF293646),
+                        ),
                       ),
-                      child: Icon(
-                        Icons.calendar_today,
-                        size: 70,
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_formattedDate - $_formattedDay',
+                        style: const TextStyle(
+                          color: Color(0xFF6A7D94),
+                          fontSize: 14,
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                GestureDetector(
+                  onLongPress: _isSessionActive ? _endAttendanceSession : null,
+                  onTap:
+                      !_isSessionActive && !_isCreatingSession
+                          ? _createAttendanceSession
+                          : null,
+                  child: Center(
+                    child: Container(
+                      width: 180,
+                      height: 180,
+                      padding: const EdgeInsets.all(18.0),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(110),
                         color:
-                            _isSessionActive
-                                ? Colors.white
+                            _isCreatingSession
+                                ? Colors.grey
+                                : _isSessionActive
+                                ? Colors.blue
                                 : _isSessionEnded
-                                ? Colors.white
-                                : Colors.black,
+                                ? Colors.grey
+                                : const Color(0xFF9CCAF9),
+                      ),
+                      child: Container(
+                        width: 90,
+                        height: 90,
+                        padding: const EdgeInsets.all(6.0),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFCFE2F8),
+                          borderRadius: BorderRadius.all(Radius.circular(100)),
+                        ),
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFB7D4F6),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(100),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.calendar_today,
+                            size: 70,
+                            color:
+                                _isSessionActive
+                                    ? Colors.white
+                                    : _isSessionEnded
+                                    ? Colors.white
+                                    : Colors.black,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Class ID: ${widget.classData.id}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    if (_sessionInfo != null)
+                      Text(
+                        'Session ID: ${_sessionInfo!['id']}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    if (_isLoadingSession)
+                      const Text(
+                        'Loading session...',
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                      )
+                    else if (_isSessionActive)
+                      Column(
+                        children: [
+                          const Text(
+                            'Session is active',
+                            style: TextStyle(color: Colors.blue, fontSize: 16),
+                          ),
+                          const Text(
+                            'Long press to end session',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      )
+                    else if (_isSessionEnded)
+                      const Text(
+                        'Session has ended',
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                      )
+                    else
+                      const Text(
+                        'Session is not active',
+                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                      ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ]),
             ),
-            const SizedBox(height: 10),
-            // Debug information
-            Text(
-              'Class ID: ${widget.classData.id}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            if (_sessionInfo != null)
-              Text(
-                'Session ID: ${_sessionInfo!['id']}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-            const SizedBox(height: 10),
-            // Status text
-            if (_isLoadingSession)
-              const Text(
-                'Loading session...',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
-              )
-            else if (_isSessionActive)
-              Column(
-                children: [
-                  const Text(
-                    'Session is active',
-                    style: TextStyle(color: Colors.blue, fontSize: 16),
-                  ),
-                  const Text(
-                    'Long press to end session',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              )
-            else if (_isSessionEnded)
-              const Text(
-                'Session has ended',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+            if (_isSessionActive || _isSessionEnded)
+              SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final entry = _attendanceSummary.entries.elementAt(index);
+                  final rollNumber = entry.key.toString();
+                  final data = entry.value as Map<String, dynamic>;
+
+                  double percentage = (data['percentage'] ?? 0).toDouble();
+                  percentage = percentage.clamp(0.0, 100.0);
+
+                  return Container(
+                    height: 200,
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color:
+                            _isSessionActive
+                                ? ColorStyle.BlueStatic
+                                : Colors.grey,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  data['student_name'] ?? 'UnKnown',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontFamily: 'Roboto',
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: ColorStyle.BlueStatic,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    rollNumber,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: ColorStyle.WhiteStatic,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Section ${_sessionInfo?['section_name'].toString().toUpperCase() ?? widget.classData.section}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF6A7D94),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Switch(
+                              inactiveThumbColor: Colors.white,
+                              activeTrackColor: Colors.green[200],
+                              inactiveTrackColor: Colors.red[200],
+                              value: data['is_present'] ?? false,
+                              onChanged:
+                                  _isUpdatingAttendance
+                                      ? null
+                                      : (value) async {
+                                        final confirmed = await showDialog<
+                                          bool
+                                        >(
+                                          context: context,
+                                          builder:
+                                              (context) => AlertDialog(
+                                                title: Text(
+                                                  'Mark ${data['student_name']} as ${value ? 'Present' : 'Absent'}?',
+                                                ),
+                                                content: Text(
+                                                  'Are you sure you want to update attendance status for ${data['student_name']}?',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed:
+                                                        () => Navigator.pop(
+                                                          context,
+                                                          false,
+                                                        ),
+                                                    child: const Text(
+                                                      'Cancel',
+                                                      style: TextStyle(
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed:
+                                                        () => Navigator.pop(
+                                                          context,
+                                                          true,
+                                                        ),
+                                                    child: Text(
+                                                      'Confirm',
+                                                      style: TextStyle(
+                                                        color:
+                                                            ColorStyle
+                                                                .BlueStatic,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                        );
+
+                                        if (confirmed == true && mounted) {
+                                          setState(() {
+                                            _attendanceSummary[rollNumber]?['is_present'] =
+                                                value;
+                                            _isUpdatingAttendance = true;
+                                          });
+
+                                          await _updateTeacherAttendance(
+                                            rollNumber,
+                                            value,
+                                          );
+
+                                          if (mounted) {
+                                            setState(
+                                              () =>
+                                                  _isUpdatingAttendance = false,
+                                            );
+                                          }
+                                        }
+                                      },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 8,
+                            disabledActiveTrackColor:
+                                percentage >= 75
+                                    ? Colors.green[200]
+                                    : Colors.red[200],
+                            disabledInactiveTrackColor: Colors.black45,
+                            disabledThumbColor: ColorStyle
+                                .BlueStatic.withOpacity(0.8),
+
+                            thumbShape: const RoundSliderThumbShape(
+                              disabledThumbRadius: 10,
+                            ),
+                            overlayColor: Colors.transparent,
+                          ),
+                          child: Slider(
+                            value: percentage,
+                            min: 0,
+                            max: 100,
+                            divisions: 10,
+                            label: '${percentage.toStringAsFixed(1)}%',
+                            onChanged: null,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Total Records: ${data['total_records'] ?? 'N/A'}',
+                              style: const TextStyle(color: Colors.black),
+                            ),
+                            Row(
+                              children: [
+                                const Text('Percentage:'),
+                                Text(
+                                  ' $percentage %',
+                                  style: TextStyle(
+                                    color:
+                                        percentage >= 75
+                                            ? Colors.green[200]
+                                            : Colors.red[200],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }, childCount: _attendanceSummary.length),
               )
             else
-              const Text(
-                'Session is not active',
-                style: TextStyle(color: Colors.grey, fontSize: 16),
+              SliverFillRemaining(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'No active session',
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
               ),
-            const SizedBox(height: 10),
-            // Session Info and Attendance List
-            Expanded(child: _buildSessionInfo()),
           ],
         ),
       ),
+      floatingActionButton:
+          _showBackToTopButton
+              ? FloatingActionButton(
+                onPressed: _scrollToTop,
+                backgroundColor: ColorStyle.BlueStatic,
+                child: const Icon(Icons.arrow_upward, color: Colors.white),
+              )
+              : null,
     );
   }
 }

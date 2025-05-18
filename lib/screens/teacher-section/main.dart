@@ -12,6 +12,7 @@ import 'package:shimmer/shimmer.dart';
 import 'dart:async'; // For Timer
 // For time formatting
 import 'package:audioplayers/audioplayers.dart'; // For sound
+import 'package:smart_track/widgets/next-class.dart';
 import 'package:smart_track/widgets/not-any-class.dart';
 import 'package:smart_track/widgets/current-class.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -426,7 +427,11 @@ class _TeacherHomeScreenState extends State<HomeTeacher> {
                         ),
                       // Next Class Card
                       if (currentClass == null && nextClass != null)
-                        _buildNextClassCard(nextClass!),
+                        BuildNextClassCard(
+                          classInfo: nextClass!,
+                          nextClassRemainingTime: nextClassRemainingTime,
+                          isStudent: true,
+                        ),
                       if (currentClass == null && nextClass == null)
                         noClassDetail(Colors.black),
                     ],
